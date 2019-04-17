@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.DismissOverlayView;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -32,6 +33,7 @@ public class MainActivity extends WearableActivity {
     public DismissOverlayView mDismissOverlay;
 
     public PrintWriter logger = null;
+    TextView inputContent = null;
 
     public void SetTargetString(String input) {
         GetKeyboard().targetText = input;
@@ -42,6 +44,9 @@ public class MainActivity extends WearableActivity {
     }
 
     public void SetCurrentString(String input) {
+        if (inputContent != null) {
+            inputContent.setText(input);
+        }
         GetKeyboard().curText = input;
     }
 
@@ -60,6 +65,8 @@ public class MainActivity extends WearableActivity {
     @Override
     public void onCreate(Bundle savedInstanceState){ // Called when beginning or orientation changed
         super.onCreate(savedInstanceState);
+        DisplayMetrics dm = this.getResources().getDisplayMetrics();
+
 
 
         try {
@@ -94,28 +101,38 @@ public class MainActivity extends WearableActivity {
         augSwitch.setGravity(Gravity.CENTER_HORIZONTAL);
         augSwitch.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-                kc.sizeMode = arg2 / 2 + 1;
-                kc.warmup = arg2 % 2 == 0;
-                if (!kc.warmup) {
-                    logger.println(String.format("changemode,%.1f", (arg2 / 2 + 5) * 0.5));
-                }
-                Toast.makeText(GetMa(), String.format("%.1f mm size", (arg2 / 2 + 5) * 0.5), Toast.LENGTH_SHORT).show();
-                pc.currentLineNum = 0;
-                kc.ReadKeyboardConfig();
-                kc.postInvalidate();
+//                kc.sizeMode = arg2 / 2 + 1;
+//                kc.warmup = arg2 % 2 == 0;
+//                if (!kc.warmup) {
+//                    logger.println(String.format("changemode,%.1f", (arg2 / 2 + 5) * 0.5));
+//                }
+//                Toast.makeText(GetMa(), String.format("%.1f mm size", (arg2 / 2 + 5) * 0.5), Toast.LENGTH_SHORT).show();
+//                pc.currentLineNum = 0;
+//                kc.ReadKeyboardConfig();
+//                kc.postInvalidate();
             }
 
             public void onNothingSelected(AdapterView<?> arg0) {
             }
         });
         augSwitch.setPadding(0, 20, 0, 0);
-        frame.addView(augSwitch, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        augSwitch.setVisibility(View.INVISIBLE);
+        //frame.addView(augSwitch, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        inputContent = new TextView(this);
+        inputContent.setPadding(0, 40, 0, 0);
+        inputContent.setWidth(6*dm.widthPixels / 10);
+        inputContent.setHeight((int)(dm.heightPixels*0.25));
+
+
+        frame.addView(inputContent, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         kc = new KeyboardCanvas(this);
         Typeface type = Typeface.createFromAsset(getAssets(), "fonts/consola.ttf");
         kc.type = type;
+        inputContent.setTypeface(type);
         LinearLayout.LayoutParams keyboardCanvasParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         frame.addView(kc, keyboardCanvasParams);
+
 
         // Obtain the DismissOverlayView element
         mDismissOverlay = new DismissOverlayView(this);//(DismissOverlayView) findViewById(R.id.dismiss_overlay);
@@ -123,11 +140,16 @@ public class MainActivity extends WearableActivity {
         mDismissOverlay.showIntroIfNecessary();
         topLayout.addView(mDismissOverlay, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        FileGenerator.offsetX = dm.widthPixels / 2;
+        FileGenerator.offsetY = dm.widthPixels / 10 * 5;
+
         pc = new ProgressController(this);
         //pc.Init();
         pc.kc = kc;
         kc.pc = pc;
         kc.ReadKeyboardConfig();
+        kc.postInvalidate();
+        kc.invalidate();
     }
 
     @Override

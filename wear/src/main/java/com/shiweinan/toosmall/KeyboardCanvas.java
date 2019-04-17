@@ -8,12 +8,18 @@ import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Vibrator;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.util.Log;
+import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
@@ -55,7 +61,7 @@ public class KeyboardCanvas extends View {
     Bound bounds = null;
     Paint boundPaint = new Paint();
 
-    public int sizeMode = 1; // 1, 2, 3
+    public int sizeMode = 3; // 1, 2, 3
 
     private SoundPool sp;
     private int soundID;
@@ -68,6 +74,7 @@ public class KeyboardCanvas extends View {
 
     public String targetText = "protect your environment";
     public String curText = "**********";
+    public String actualText = "_";
     boolean warmup = true;
     Typeface type;
 
@@ -79,6 +86,15 @@ public class KeyboardCanvas extends View {
 
     private GestureDetector mDetector;
 
+
+    ArrayList<Pair<String, Double>> candidateWords = null;
+    final int CANDIDATE_NUM = 3;
+    int currentCandidateIndex = 0;
+    double keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
+    double keyHeight = keyWidth;//8 * 7.5;
+    double candidateHeight = 1.2*keyHeight;
+    double qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
+    double qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
     public KeyboardCanvas(Context context) {
         super(context);
         mainActivity = (MainActivity)context;
@@ -94,41 +110,68 @@ public class KeyboardCanvas extends View {
                 mainActivity.mDismissOverlay.show();
             }
         });
+
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawColor(Color.BLACK);
+        keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
+        keyHeight = keyWidth;//8 * 7.5;
+        candidateHeight = 1.5*keyHeight;
+        qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
+        qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
+
+        canvas.drawColor(Config.KEY_BACKGROUND_COLOR);
+        Paint paint = new Paint();
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.FILL);
+        //canvas.drawRect(0, 0, (float)(keyWidth*20), (float)(qCenterY-candidateHeight), paint);
 
         for (int i = 0; i < allKeys.size(); i++) {
             allKeys.get(i).DrawMyself(canvas);
         }
 
+        CandidateKey background = new CandidateKey(10 * keyWidth, qCenterY -candidateHeight, 20 * keyWidth, candidateHeight, "");
+        background.DrawMyself(canvas);
         for (int i = 0; i < wordSelections.size(); i++) {
-            wordSelections.get(i).DrawMyself(canvas);
+            boolean drawSplit = (i < wordSelections.size() - 1);
+            wordSelections.get(i).DrawMyself(canvas, drawSplit);
         }
 
         //绘制背景色
-        Paint paint = new Paint();
+
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
         paint.setTextSize((int)(2.5 * (sizeMode + 4)));
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setTypeface(type);
-        if (warmup) {
-            canvas.drawText("Warming: " + (pc.currentLineNum + 1) + " / 20", (float)FileGenerator.offsetX, (int)(FileGenerator.offsetY - 5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
-        } else {
-            canvas.drawText("Testing: " + (pc.currentLineNum + 1) + " / 20", (float)FileGenerator.offsetX, (int)(FileGenerator.offsetY - 5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
-        }
-        paint.setTextAlign(Paint.Align.LEFT);
+//        if (warmup) {
+//            canvas.drawText("Warming: " + (pc.currentLineNum + 1) + " / 20", (float)FileGenerator.offsetX, (int)(FileGenerator.offsetY - 5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
+//        } else {
+//            canvas.drawText("Testing: " + (pc.currentLineNum + 1) + " / 20", (float)FileGenerator.offsetX, (int)(FileGenerator.offsetY - 5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
+//        }
+        paint.setTextSize((float)(keyHeight));
+        paint.setTextAlign(Paint.Align.CENTER);
         //canvas.drawText(targetText, (int)(FileGenerator.offsetX - 4.5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
         //canvas.drawText(curText, (int)(FileGenerator.offsetX - 4.5 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 3 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
-        canvas.drawText(targetText, (int)(FileGenerator.offsetX - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
-        canvas.drawText(curText, (int)(FileGenerator.offsetX - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 3 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
-        if (finished) {
-            canvas.drawText(String.format("Speed: %.1f WPM, CER:%.1f%%", speed, accuracy * 100),
-                    (int) (FileGenerator.offsetX - 4.5 * (2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1))), (int) (FileGenerator.offsetY - 2 * (2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1))), paint);
-        }
+        //canvas.drawText(targetText, (int)(FileGenerator.offsetX - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
+
+        //canvas.drawText(curText, (int)(FileGenerator.offsetX - 4 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), (int)(FileGenerator.offsetY - 3 * (2 * FileGenerator.ppi/25.4 * (sizeMode * 0.25 + 1))), paint);
+
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setTextSize((int)(10 * keyWidth / CANDIDATE_NUM / 6));
+        paint.setTextAlign(Paint.Align.CENTER);
+        float textWidth = paint.measureText(actualText);
+        // 文字baseline在y轴方向的位置
+        float baseLineY = Math.abs(paint.ascent() + paint.descent()) / 2;
+        canvas.drawText(actualText, (float)FileGenerator.offsetX - textWidth / 2, (float)(qCenterY - 2*candidateHeight +baseLineY), paint);
+
+        //canvas.drawText(actualText, (int)(FileGenerator.offsetX - 4 * keyWidth), (int)(qCenterY-2*candidateHeight), paint);
+//        if (finished) {
+//            canvas.drawText(String.format("Speed: %.1f WPM, CER:%.1f%%", speed, accuracy * 100),
+//                    (int) (FileGenerator.offsetX - 4.5 * (2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1))), (int) (FileGenerator.offsetY - 2 * (2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1))), paint);
+//        }
         super.onDraw(canvas);
     }
 
@@ -186,6 +229,7 @@ public class KeyboardCanvas extends View {
         return null;
     }
 
+
     public void CaptureUp(MotionEvent event) {
         sp.play(soundID, 0.4f, 0.4f, 0, 0, 1);
         //vibrator.vibrate(50);
@@ -198,22 +242,27 @@ public class KeyboardCanvas extends View {
         double verticalSwipeThres = horizontalSwipeThres * 0.5;
 
         if (x - lastX > horizontalSwipeThres) { // swipe right, finish a task, or continue to the next task
-            if (!finished) {
-                finished = true;
-                speed = CalcSpeed();
-                accuracy = CalcAccuracy();
-            } else {
-                if (!warmup) {
-                    mainActivity.logger.println("finish," + speed + "," + accuracy);
-                    mainActivity.logger.flush();
-                }
-                pc.ChangeLine(1);
+            if (touchpoints.size() > 0) {
+                currentCandidateIndex = CANDIDATE_NUM - currentCandidateIndex;
+                updateWordSelections();
             }
+//            if (!finished) {
+//                finished = true;
+//                speed = CalcSpeed();
+//                accuracy = CalcAccuracy();
+//            } else {
+//                if (!warmup) {
+//                    mainActivity.logger.println("finish," + speed + "," + accuracy);
+//                    mainActivity.logger.flush();
+//                }
+//                pc.ChangeLine(1);
+//            }
         } else if (lastX - x > horizontalSwipeThres) { // swipe left, delete or restart the task
             if (!finished) {
                 if (touchpoints.size() > 0) {
                     wordSelections.clear();
                     touchpoints.clear();
+                    actualText = "_";
                     return;
                 } else if (mainActivity.GetCurrentString().length() > 0) {
                     int space = -1;
@@ -273,10 +322,10 @@ public class KeyboardCanvas extends View {
             */
         } else { // hit space (to correct the input), or hit normal keys
             if (!finished) {
-                double keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
-                double keyHeight = keyWidth;//8 * 7.5;
-                double qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
-                double qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
+                keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
+                keyHeight = keyWidth;//8 * 7.5;
+                qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
+                qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
                 if (qCenterY - y > keyHeight * 1.5) {
                     CandidateKey selected = null;
                     int selectIndex;
@@ -302,6 +351,7 @@ public class KeyboardCanvas extends View {
                         }
                         wordSelections.clear();
                         touchpoints.clear();
+                        actualText = "_";
                         return;
                     }
                 }
@@ -360,6 +410,11 @@ public class KeyboardCanvas extends View {
                         mainActivity.AppendCurrentString(" ");
                     }
                 }*/
+                if (hit != null) {
+                    actualText = actualText.substring(0, actualText.length()-1)+hit.symbol.toLowerCase()+"_";
+                } else {
+                    actualText = actualText.substring(0, actualText.length()-1)+"*_";
+                }
                 if (!warmup) {
                     if (targetKey != null) { // within a task
                         mainActivity.logger.println("touch,down," + targetKey.GetSize() + "," + targetKey.GetCenterX() + "," + targetKey.GetCenterY() + "," + lastX + "," + lastY + "," + targetKey.GetID() + "," + targetKey.Hit(lastX, lastY) + "," + lastTime);
@@ -371,20 +426,33 @@ public class KeyboardCanvas extends View {
                 }
                 touchpoints.add(new Coordinate(lastX, lastY));
 
-                wordSelections.clear();
-                ArrayList<String> words = pc.ParseWord(touchpoints);
-                for (int i = 0; i < words.size(); i++) {
-                    //double keyWidth = 2 * 205 / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
-                    //double keyHeight = keyWidth;//8 * 7.5;
-                    //double qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
-                    //double qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
-                    wordSelections.add(new CandidateKey(5.0 * keyWidth / words.size() * (2 * i + 1) + qCenterX - 0.5 * keyWidth, qCenterY - keyHeight, 10 * keyWidth / words.size(), keyHeight, words.get(i)));
-                }
+
+                candidateWords = pc.ParseWord(touchpoints);
+                currentCandidateIndex = 0;
+                updateWordSelections();
+//                for (int i = 0; i < words.size(); i++) {
+//                    //double keyWidth = 2 * 205 / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
+//                    //double keyHeight = keyWidth;//8 * 7.5;
+//                    //double qCenterX = FileGenerator.offsetX - 4.5 * keyWidth;//500 - 4.5 * keyWidth;
+//                    //double qCenterY = FileGenerator.offsetY - 1.5 * keyHeight;//400 - 1.5 * keyHeight;
+//                    wordSelections.add(new CandidateKey(5.0 * keyWidth / words.size() * (2 * i + 1) + qCenterX - 0.5 * keyWidth, qCenterY - keyHeight, 10 * keyWidth / words.size(), keyHeight, words.get(i)));
+//                }
             }
         }
 
         for (int i = 0; i < allKeys.size(); i++) {
             allKeys.get(i).Reset();
+        }
+    }
+
+    public void updateWordSelections() {
+        wordSelections.clear();
+        for (int i=0; i<CANDIDATE_NUM; i++) {
+            String word = " ";
+            if (currentCandidateIndex + i < candidateWords.size()) {
+                word = candidateWords.get((currentCandidateIndex + i)).first;
+            }
+            wordSelections.add(new CandidateKey(5.0 * keyWidth / CANDIDATE_NUM * (2 * i + 1) + qCenterX - 0.5 * keyWidth, qCenterY -candidateHeight, 10 * keyWidth / CANDIDATE_NUM, candidateHeight, word));
         }
     }
 

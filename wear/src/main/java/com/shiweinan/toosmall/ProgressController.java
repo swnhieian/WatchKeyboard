@@ -2,12 +2,16 @@ package com.shiweinan.toosmall;
 
 import android.media.AudioManager;
 import android.media.SoundPool;
+import android.util.Pair;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 class Cloud {
@@ -143,11 +147,10 @@ public class ProgressController {
         PrepareTask();
     }
 
-    public ArrayList<String> ParseWord(ArrayList<Coordinate> touchpoints) {
+    public ArrayList<Pair<String, Double>> ParseWord(ArrayList<Coordinate> touchpoints) {
         ArrayList<String> rsttt = new ArrayList<String>();
         int size = kc.sizeMode * 5 + 20;
-        ArrayList<String> candidates = new ArrayList<String>();
-        ArrayList<Double> probs = new ArrayList<Double>();
+        ArrayList<Pair<String, Double>> candidates = new ArrayList<>();
         for (String candi : corpus.keySet()) {
             if (candi.length() == touchpoints.size()) {
                 double rst = 1;
@@ -160,43 +163,69 @@ public class ProgressController {
                     rst *= 1 / sigx / sigy * Math.pow(Math.E, -0.5 * (((touchpoints.get(i).x - x) * (touchpoints.get(i).x - x)) / (sigx * sigx) + ((touchpoints.get(i).y - y) * (touchpoints.get(i).y - y)) / (sigy * sigy)));
                     //rst *= corpus.get(candi);
                 }
-                candidates.add(candi);
-                probs.add(rst);
+                candidates.add(new Pair<String, Double>(candi, rst));
             }
         }
-        String winner = null;
-        double winnerValue = -1;
-        for (int i = 0; i < candidates.size(); i++) {
-            if (probs.get(i) > winnerValue) {
-                winnerValue = probs.get(i);
-                winner = candidates.get(i);
-            }
-        }
-        if (winner != null) {
-            rsttt.add(winner);
-        }
-        String second = null;
-        double secondValue = -1;
-        for (int i = 0; i < candidates.size(); i++) {
-            if (probs.get(i) > secondValue && probs.get(i) != winnerValue) {
-                secondValue = probs.get(i);
-                second = candidates.get(i);
-            }
-        }
-        if (second != null) {
-            rsttt.add(second);
-        }
-        String third = null;
-        double thirdValue = -1;
-        for (int i = 0; i < candidates.size(); i++) {
-            if (probs.get(i) > thirdValue && probs.get(i) != winnerValue && probs.get(i) != secondValue) {
-                thirdValue = probs.get(i);
-                third = candidates.get(i);
-            }
-        }
-        if (third != null) {
-            rsttt.add(third);
-        }
-        return rsttt;
+
+//        ArrayList<String> candidates = new ArrayList<String>();
+//        ArrayList<Double> probs = new ArrayList<Double>();
+//        for (String candi : corpus.keySet()) {
+//            if (candi.length() == touchpoints.size()) {
+//                double rst = 1;
+//                for (int i = 0; i < candi.length(); i++) {
+//                    String symbol = candi.substring(i, i + 1);
+//                    double x = clouds.get(size).get(symbol).x;
+//                    double y = clouds.get(size).get(symbol).y;
+//                    double sigx = clouds.get(size).get(symbol).sdx;
+//                    double sigy = clouds.get(size).get(symbol).sdy;
+//                    rst *= 1 / sigx / sigy * Math.pow(Math.E, -0.5 * (((touchpoints.get(i).x - x) * (touchpoints.get(i).x - x)) / (sigx * sigx) + ((touchpoints.get(i).y - y) * (touchpoints.get(i).y - y)) / (sigy * sigy)));
+//                    //rst *= corpus.get(candi);
+//                }
+//                candidates.add(candi);
+//                probs.add(rst);
+//            }
+//        }
+        Collections.sort(candidates, new Comparator<Pair<String, Double>>() {
+                    @Override
+                    public int compare(Pair<String, Double> o1, Pair<String, Double> o2) {
+                        return o2.second.compareTo(o1.second);
+                    }
+                });
+        candidates.add(new Pair<>("^", 0.0));
+//        String winner = null;
+//        double winnerValue = -1;
+//        for (int i = 0; i < candidates.size(); i++) {
+//            if (probs.get(i) > winnerValue) {
+//                winnerValue = probs.get(i);
+//                winner = candidates.get(i);
+//            }
+//        }
+//        if (winner != null) {
+//            rsttt.add(winner);
+//        }
+//        String second = null;
+//        double secondValue = -1;
+//        for (int i = 0; i < candidates.size(); i++) {
+//            if (probs.get(i) > secondValue && probs.get(i) != winnerValue) {
+//                secondValue = probs.get(i);
+//                second = candidates.get(i);
+//            }
+//        }
+//        if (second != null) {
+//            rsttt.add(second);
+//        }
+//        String third = null;
+//        double thirdValue = -1;
+//        for (int i = 0; i < candidates.size(); i++) {
+//            if (probs.get(i) > thirdValue && probs.get(i) != winnerValue && probs.get(i) != secondValue) {
+//                thirdValue = probs.get(i);
+//                third = candidates.get(i);
+//            }
+//        }
+//        if (third != null) {
+//            rsttt.add(third);
+//        }
+        return candidates;
+        //return rsttt;
     }
 }

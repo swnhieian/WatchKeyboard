@@ -35,13 +35,19 @@ public class RectangleKey {
         paint.setColor(backgroundColor[state]);
         canvas.drawRect((float)(centerX - width / 2), (float)(centerY - height / 2), (float)(centerX + width / 2), (float)(centerY + height / 2), paint);
         paint.setColor(Color.BLACK);
-        paint.setStyle(Paint.Style.STROKE);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Config.KEY_BACKGROUND_COLOR);
         canvas.drawRect((float)(centerX - width / 2), (float)(centerY - height / 2), (float)(centerX + width / 2), (float)(centerY + height / 2), paint);
         //ç»˜åˆ¶çŸ©å½¢
         paint.setColor(Color.BLACK);
+        paint.setColor(Config.KEY_NAME_COLOR);
         paint.setTextSize((float)(height / 2));
         paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText(symbol, (float)centerX, (float)centerY, paint);
+        float textWidth = paint.measureText(symbol);
+        // 文字baseline在y轴方向的位置
+        float baseLineY = Math.abs(paint.ascent() + paint.descent()) / 2;
+        canvas.drawText(symbol, (float)centerX-textWidth / 2, (float)centerY+baseLineY, paint);
+        //canvas.drawText(symbol, (float)centerX, (float)(centerY+height/4), paint);
     }
 
     public boolean Hit(double x, double y) {

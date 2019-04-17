@@ -21,18 +21,25 @@ public class CandidateKey {
         this.word = symbol;
         state = 0;
     }
-
     public void DrawMyself(Canvas canvas) {
+        DrawMyself(canvas, false);
+    }
+
+    public void DrawMyself(Canvas canvas, boolean drawSplitLine) {
         Paint paint = new Paint();
         paint.setColor(backgroundColor[state]);
+        paint.setColor(Config.CANDIDATE_BACKGROUND_COLOR);
         canvas.drawRect((float)(centerX - width / 2), (float)(centerY - height / 2), (float)(centerX + width / 2), (float)(centerY + height / 2), paint);
-        paint.setColor(Color.WHITE);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(3);
-        canvas.drawRect((float)(centerX - width / 2), (float)(centerY - height / 2), (float)(centerX + width / 2), (float)(centerY + height / 2), paint);
+        paint.setStyle(Paint.Style.FILL);
+        if (drawSplitLine) {
+            paint.setColor(Config.CANDIDATE_SPLIT_LINE_COLOR);
+            paint.setStrokeWidth(2);
+            canvas.drawLine((float) (centerX + width / 2), (float) (centerY - height / 2), (float) (centerX + width / 2), (float) (centerY + height / 2), paint);
+        }
         //绘制矩形
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
+        paint.setColor(Config.CANDIDATE_NAME_COLOR);
         paint.setTextSize((float)width / 6);
         paint.setTextAlign(Paint.Align.CENTER);
         canvas.drawText(word, (float)centerX, (float)(centerY + height / 10), paint);
