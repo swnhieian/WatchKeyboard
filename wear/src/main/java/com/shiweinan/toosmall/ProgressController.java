@@ -166,10 +166,10 @@ public class ProgressController {
                 }
                 int rank = candidates.size();
                 for (int i=candidates.size()-1; i>=0; i--) {
-                    rank = i;
                     if (rst < candidates.get(i).second) {
                         break;
                     }
+                    rank = i;
                 }
                 if (rank >= 0 && rank < 2* Config.CANDIDATE_NUM) {
                     candidates.add(rank, new Pair<>(candi, rst));
