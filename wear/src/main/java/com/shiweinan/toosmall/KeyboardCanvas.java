@@ -88,7 +88,6 @@ public class KeyboardCanvas extends View {
 
 
     ArrayList<Pair<String, Double>> candidateWords = null;
-    final int CANDIDATE_NUM = 3;
     int currentCandidateIndex = 0;
     double keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
     double keyHeight = keyWidth;//8 * 7.5;
@@ -160,7 +159,7 @@ public class KeyboardCanvas extends View {
 
         paint.setColor(Color.WHITE);
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
-        paint.setTextSize((int)(10 * keyWidth / CANDIDATE_NUM / 6));
+        paint.setTextSize((int)(10 * keyWidth / Config.CANDIDATE_NUM / 6));
         paint.setTextAlign(Paint.Align.CENTER);
         float textWidth = paint.measureText(actualText);
         // 文字baseline在y轴方向的位置
@@ -243,20 +242,9 @@ public class KeyboardCanvas extends View {
 
         if (x - lastX > horizontalSwipeThres) { // swipe right, finish a task, or continue to the next task
             if (touchpoints.size() > 0) {
-                currentCandidateIndex = CANDIDATE_NUM - currentCandidateIndex;
+                currentCandidateIndex = Config.CANDIDATE_NUM - currentCandidateIndex;
                 updateWordSelections();
             }
-//            if (!finished) {
-//                finished = true;
-//                speed = CalcSpeed();
-//                accuracy = CalcAccuracy();
-//            } else {
-//                if (!warmup) {
-//                    mainActivity.logger.println("finish," + speed + "," + accuracy);
-//                    mainActivity.logger.flush();
-//                }
-//                pc.ChangeLine(1);
-//            }
         } else if (lastX - x > horizontalSwipeThres) { // swipe left, delete or restart the task
             if (!finished) {
                 if (touchpoints.size() > 0) {
@@ -275,10 +263,6 @@ public class KeyboardCanvas extends View {
                     mainActivity.SetCurrentString(mainActivity.GetCurrentString().substring(0, space + 1));
                     wordSelections.clear();
                     touchpoints.clear();
-                    if (!warmup) {
-                        mainActivity.logger.println("delete," + (System.currentTimeMillis() - lastTime) + "," + lastX + "," + x);
-                        mainActivity.logger.flush();
-                    }
                     return;
                 }
             } else {
@@ -291,35 +275,7 @@ public class KeyboardCanvas extends View {
             //} else if (y - lastY > verticalSwipeThres) { // swipe down, do nothing
 
         /*} else if (lastY - y > verticalSwipeThres) { // swipe up, choose a candidate
-            if (!finished) {
-                CandidateKey selected = null;
-                int selectIndex;
-                for (selectIndex = 0; selectIndex < wordSelections.size(); selectIndex++) {
-                    CandidateKey tmp = wordSelections.get(selectIndex);
-                    if (tmp.Hit(lastX, lastY)) {
-                        selected = tmp;
-                        break;
-                    }
-                }
-                if (selected != null) {
-                    int space = -1;
-                    for (int i = mainActivity.GetCurrentString().length() - 1; i >= 0; i--) {
-                        if (mainActivity.GetCurrentString().charAt(i) == ' ') {
-                            space = i;
-                            break;
-                        }
-                    }
-                    mainActivity.SetCurrentString(mainActivity.GetCurrentString().substring(0, space + 1) + selected.word + " ");
-                    if (!warmup) {
-                        mainActivity.logger.println("swipeup," + (System.currentTimeMillis() - lastTime) + "," + lastY + "," + y + "," + selectIndex + "," + selected.word + "," + targetText.contains(selected.word));
-                        mainActivity.logger.flush();
-                    }
-                    wordSelections.clear();
-                    touchpoints.clear();
-                    return;
-                }
-            }
-            */
+      */
         } else { // hit space (to correct the input), or hit normal keys
             if (!finished) {
                 keyWidth = 2 * FileGenerator.ppi / 25.4 * (sizeMode * 0.25 + 1);//6.5 * 7.5;   294/25.4 pixel = 1 mm
@@ -345,10 +301,6 @@ public class KeyboardCanvas extends View {
                             }
                         }
                         mainActivity.SetCurrentString(mainActivity.GetCurrentString().substring(0, space + 1) + selected.word + " ");
-                        if (!warmup) {
-                            mainActivity.logger.println("select," + lastX + "," + lastY + "," + selectIndex + "," + selected.word + "," + targetText.contains(selected.word) + "," + System.currentTimeMillis());
-                            mainActivity.logger.flush();
-                        }
                         wordSelections.clear();
                         touchpoints.clear();
                         actualText = "_";
@@ -388,42 +340,12 @@ public class KeyboardCanvas extends View {
                         break;
                     }*/
                 }
-                /*if (hit.GetSymbol().equals(" ")) {
-                    if (wordSelections.size() != 0) {
-                        int space = -1;
-                        for (int i = mainActivity.GetCurrentString().length() - 1; i >= 0; i--) {
-                            if (mainActivity.GetCurrentString().charAt(i) == ' ') {
-                                space = i;
-                                break;
-                            }
-                        }
-                        mainActivity.SetCurrentString(mainActivity.GetCurrentString().substring(0, space + 1) + wordSelections.get(0).word);
-                        mainActivity.AppendCurrentString(" ");
-                        if (!warmup) {
-                            mainActivity.logger.println("space," + lastX + "," + lastY + "," + wordSelections.get(0).word + "," + targetText.contains(wordSelections.get(0).word) + "," + System.currentTimeMillis());
-                            mainActivity.logger.flush();
-                        }
-                        wordSelections.clear();
-                        touchpoints.clear();
-                        return;
-                    } else {
-                        mainActivity.AppendCurrentString(" ");
-                    }
-                }*/
                 if (hit != null) {
                     actualText = actualText.substring(0, actualText.length()-1)+hit.symbol.toLowerCase()+"_";
                 } else {
                     actualText = actualText.substring(0, actualText.length()-1)+"*_";
                 }
-                if (!warmup) {
-                    if (targetKey != null) { // within a task
-                        mainActivity.logger.println("touch,down," + targetKey.GetSize() + "," + targetKey.GetCenterX() + "," + targetKey.GetCenterY() + "," + lastX + "," + lastY + "," + targetKey.GetID() + "," + targetKey.Hit(lastX, lastY) + "," + lastTime);
-                    } else {
-                        mainActivity.logger.println("touch,down," + -1 + "," + -1 + "," + -1 + "," + lastX + "," + lastY + "," + target + "," + false + "," + lastTime);
-                    }
-                    mainActivity.logger.println("touch,up," + x + "," + y + "," + System.currentTimeMillis());
-                    mainActivity.logger.flush();
-                }
+
                 touchpoints.add(new Coordinate(lastX, lastY));
 
 
@@ -447,12 +369,12 @@ public class KeyboardCanvas extends View {
 
     public void updateWordSelections() {
         wordSelections.clear();
-        for (int i=0; i<CANDIDATE_NUM; i++) {
+        for (int i=0; i<Config.CANDIDATE_NUM; i++) {
             String word = " ";
             if (currentCandidateIndex + i < candidateWords.size()) {
                 word = candidateWords.get((currentCandidateIndex + i)).first;
             }
-            wordSelections.add(new CandidateKey(5.0 * keyWidth / CANDIDATE_NUM * (2 * i + 1) + qCenterX - 0.5 * keyWidth, qCenterY -candidateHeight, 10 * keyWidth / CANDIDATE_NUM, candidateHeight, word));
+            wordSelections.add(new CandidateKey(5.0 * keyWidth / Config.CANDIDATE_NUM * (2 * i + 1) + qCenterX - 0.5 * keyWidth, qCenterY -candidateHeight, 10 * keyWidth / Config.CANDIDATE_NUM, candidateHeight, word));
         }
     }
 

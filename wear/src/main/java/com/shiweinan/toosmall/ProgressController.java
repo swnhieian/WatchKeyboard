@@ -151,6 +151,7 @@ public class ProgressController {
         ArrayList<String> rsttt = new ArrayList<String>();
         int size = kc.sizeMode * 5 + 20;
         ArrayList<Pair<String, Double>> candidates = new ArrayList<>();
+        candidates.add(new Pair<>("", Double.NEGATIVE_INFINITY));
         for (String candi : corpus.keySet()) {
             if (candi.length() == touchpoints.size()) {
                 double rst = 1;
@@ -163,7 +164,20 @@ public class ProgressController {
                     rst *= 1 / sigx / sigy * Math.pow(Math.E, -0.5 * (((touchpoints.get(i).x - x) * (touchpoints.get(i).x - x)) / (sigx * sigx) + ((touchpoints.get(i).y - y) * (touchpoints.get(i).y - y)) / (sigy * sigy)));
                     //rst *= corpus.get(candi);
                 }
-                candidates.add(new Pair<String, Double>(candi, rst));
+                int rank = candidates.size();
+                for (int i=candidates.size()-1; i>=0; i--) {
+                    rank = i;
+                    if (rst < candidates.get(i).second) {
+                        break;
+                    }
+                }
+                if (rank >= 0 && rank < 2* Config.CANDIDATE_NUM) {
+                    candidates.add(rank, new Pair<>(candi, rst));
+                }
+                while (candidates.size() > 2*Config.CANDIDATE_NUM) {
+                    candidates.remove(candidates.size() - 1);
+                }
+                //candidates.add(new Pair<String, Double>(candi, rst));
             }
         }
 
@@ -185,13 +199,25 @@ public class ProgressController {
 //                probs.add(rst);
 //            }
 //        }
-        Collections.sort(candidates, new Comparator<Pair<String, Double>>() {
+
+
+        /*Collections.sort(candidates, new Comparator<Pair<String, Double>>() {
                     @Override
                     public int compare(Pair<String, Double> o1, Pair<String, Double> o2) {
                         return o2.second.compareTo(o1.second);
                     }
                 });
-        candidates.add(new Pair<>("^", 0.0));
+        candidates.add(new Pair<>("^", 0.0));*/
+
+
+
+//        ArrayList<Pair<String, Double>> ret = new ArrayList<>();
+//        for (int i=0; i<2*Config.CANDIDATE_NUM; i++) {
+//            ret.add(new Pair<>("^", Double.NEGATIVE_INFINITY));
+//        }
+//        for (int i=0; i<candidates.)
+
+
 //        String winner = null;
 //        double winnerValue = -1;
 //        for (int i = 0; i < candidates.size(); i++) {
